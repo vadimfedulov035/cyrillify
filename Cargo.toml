@@ -1,0 +1,10 @@
+[package]
+name = "cyrillify"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+hashify = "0.2.6"
+unicode-segmentation = "1.12.0"
+
+iced = { version = "0.12", features = ["tokio"] }
