@@ -33,10 +33,16 @@ impl fmt::Display for Language {
     }
 }
 
-const SUPPORTED_LANGUAGES: &[Language] = &[Language {
-    name: "Thai",
-    id: "thai",
-}];
+const SUPPORTED_LANGUAGES: &[Language] = &[
+    Language {
+        name: "Thai",
+        id: "thai",
+    },
+    Language {
+        name: "Burmese",
+        id: "burmese",
+    },
+];
 
 struct CyrillifyApp {
     selected_language: Language,
@@ -64,7 +70,12 @@ impl CyrillifyApp {
             "thai" => handler::cyrillify(
                 &self.input_text,
                 languages::thai::MAX_KEY_LEN,
-                languages::thai::get_cyrill,
+                languages::thai::get_cyrillic,
+            ),
+            "burmese" => handler::cyrillify(
+                &self.input_text,
+                languages::burmese::MAX_KEY_LEN,
+                languages::burmese::get_cyrillic,
             ),
             _ => "Language not implemented.".to_string(),
         };
