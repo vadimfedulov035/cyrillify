@@ -32,8 +32,9 @@ The current development priority is as follows:
 | **Chinese** | ⏳ Planned |
 | **Indonesian** | ⏳ Planned |
 | **Vietnamese** | ⏳ Planned |
+| **Korean** | ⏳ Planned |
 | **Thai** | ✅ **Done** |
-| **Burmese** | ⏳ Beta |
+| **Burmese** | ✅ **Done** |
 
 ## Installation
 
