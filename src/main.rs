@@ -1,12 +1,15 @@
 #![windows_subsystem = "windows"]
 
 use iced::widget::{column, container, pick_list, text, text_input};
-use iced::{Alignment, Element, Length, Task as Command, Theme};
+use iced::{Alignment, Element, Length, Task as Command};
+use strum::IntoEnumIterator;
 
+mod casing;
 mod languages;
 mod transcriber;
 
-const SUPPORTED_LANGUAGES: &[&str] = &["Тайский", "Бирманский"];
+use transcriber::TranscriberEnum;
+use transcriber::TranscriberTrait;
 
 pub fn main() -> iced::Result {
     iced::application("Cyrillify", Cyrillify::update, Cyrillify::view)
@@ -30,49 +33,17 @@ enum Message {
 
 impl Cyrillify {
     fn retranscribe(&mut self) {
-        let max_len;
-        let get_transcription: fn(&str, bool) -> Option<&'static str>;
-        let mark_word_start;
+        let transcriber = TranscriberEnum::iter()
+            .find(|transcriber| {
+                transcriber.get_lang_name() == self.selected_language
+            })
+            .expect("Transcriber for selected language not found.");
 
-        match self.selected_language {
-            "Тайский" => {
-                max_len = languages::thai::MAX_KEY_LEN;
-                get_transcription = languages::thai::get_transcription;
-                mark_word_start = false; // with |
-            }
-            "Бирманский" => {
-                max_len = languages::burmese::MAX_KEY_LEN;
-                get_transcription = languages::burmese::get_transcription;
-                mark_word_start = true; // with |
-            }
-            _ => return,
-        }
-
-        self.output_text = transcriber::transcribe(
-            &self.input_text,
-            max_len,
-            get_transcription,
-            mark_word_start,
-        );
+        self.output_text = transcriber.transcribe(&self.input_text);
     }
 }
 
 impl Cyrillify {
-    fn new() -> (Self, Command<Message>) {
-        (
-            Self {
-                selected_language: SUPPORTED_LANGUAGES[0],
-                input_text: String::new(),
-                output_text: String::new(),
-            },
-            Command::none(),
-        )
-    }
-
-    fn title(&self) -> String {
-        "Cyrillify".into()
-    }
-
     fn update(&mut self, message: Message) -> Command<Message> {
         match message {
             Message::LanguageChanged(language) => {
@@ -90,7 +61,9 @@ impl Cyrillify {
 
     fn view(&self) -> Element<Message> {
         let language_picker = pick_list(
-            SUPPORTED_LANGUAGES.to_vec(),
+            TranscriberEnum::iter()
+                .map(|variant| variant.get_lang_name())
+                .collect::<Vec<_>>(),
             Some(self.selected_language),
             Message::LanguageChanged,
         );
@@ -119,9 +92,5 @@ impl Cyrillify {
             .align_x(Alignment::Center)
             .align_y(Alignment::Center)
             .into()
-    }
-
-    fn theme(&self) -> Theme {
-        Theme::default()
     }
 }

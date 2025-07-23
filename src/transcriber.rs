@@ -1,218 +1,182 @@
+use enum_dispatch::enum_dispatch;
+use strum_macros::EnumIter;
 use unicode_segmentation::UnicodeSegmentation;
 
-/// Transcribes word to cyrillic alphabet, falls back to rewriting it
-pub fn transcribe_word<F>(
-    input: &str,
-    max_len: usize,
-    get_transcription: F,
-    mark_word_start: bool,
-) -> String
-where
-    F: Fn(&str, bool) -> Option<&'static str>,
-{
-    let mut current = input;
-    let mut output = String::with_capacity(input.len() * 2);
+use crate::casing;
+use crate::languages::{burmese, thai, vietnamese};
 
-    let mut mark_word_start_this = mark_word_start;
+// Enum language
+#[derive(EnumIter)]
+#[enum_dispatch(TranscriberTrait)]
+pub enum TranscriberEnum {
+    Burmese(burmese::Transcriber),
+    Thai(thai::Transcriber),
+    Vietnamese(vietnamese::Transcriber),
+}
 
-    while !current.is_empty() {
-        let mut matched = false;
+// Rules definition
+#[derive(Copy, Clone)]
+pub struct FormatRules {
+    pub prefix_start: bool,
+    pub postfix_end: bool,
+}
 
-        // Collect next `max_len` graphemes
-        let graphemes: Vec<(usize, &str)> =
-            current.grapheme_indices(true).take(max_len).collect();
+// Generic language transcriber
+#[enum_dispatch]
+pub trait TranscriberTrait {
+    // -- METHODS TO IMPLEMENT --
+    /// Returns language name
+    fn get_lang_name(&self) -> &'static str;
 
-        // Check from longest to shortest match
-        for i in (0..graphemes.len()).rev() {
-            // Slice from current to i-th grapheme end
-            let (grapheme_start, grapheme) = graphemes[i];
-            let grapheme_end = grapheme_start + grapheme.len();
-            let segment = &current[..grapheme_end];
+    /// Returns the maximum key length to handle
+    fn get_max_key_len(&self) -> usize;
 
-            // On match, transcribe and advance
+    /// Returns format rules applied to key
+    fn get_format_rules(&self) -> FormatRules;
+
+    /// Returns transcription for given lowercase key
+    fn get_transcription_str(&self, key: &str) -> Option<&'static str>;
+
+    // -- DEFAULT IMPLEMENTATION --
+
+    /// Transcribes key using its config
+    fn get_transcription(
+        &self,
+        key: &str,
+        prefix_start: bool,
+        postfix_end: bool,
+    ) -> Option<&'static str> {
+        // Format key if needed
+        if prefix_start || postfix_end {
+            let formatted_key = if prefix_start && postfix_end {
+                format!("|{}|", key)
+            } else if prefix_start {
+                format!("|{}", key)
+            } else if postfix_end {
+                format!("{}|", key)
+            } else {
+                panic!();
+            };
+
+            // Check formatted key
             if let Some(transcription) =
-                get_transcription(segment, mark_word_start_this)
+                self.get_transcription_str(&formatted_key)
             {
-                output.push_str(transcription);
-                current = &current[grapheme_end..];
-                matched = true;
-                mark_word_start_this = false;
-                break;
+                return Some(transcription);
             }
         }
 
-        // On no match, copy as-is
-        if !matched {
-            if let Some(first_grapheme) = current.graphemes(true).next() {
-                output.push_str(first_grapheme);
-                current = &current[first_grapheme.len()..];
-            }
-        }
+        // Check original key (right away or as a fallback)
+        self.get_transcription_str(key)
     }
 
-    output
-}
+    /// Transcribes word to cyrillic alphabet, falls back to rewriting it
+    fn transcribe_word(&self, input: &str) -> String {
+        let mut current = input;
+        let mut output = String::with_capacity(input.len() * 2);
 
-#[derive(PartialEq)]
-enum Case {
-    Lower,
-    Title,
-    Upper,
-    Mixed,
-}
+        let max_key_len = self.get_max_key_len();
+        let FormatRules {
+            mut prefix_start,
+            mut postfix_end,
+        } = self.get_format_rules();
 
-/// Determines word case
-fn get_case(input: &str) -> Case {
-    let mut chars = input.chars();
+        while !current.is_empty() {
+            let mut matched = false;
 
-    // Get first character for sure
-    let first = chars.next().unwrap();
+            // Collect next `max_key_len` graphemes
+            let graphemes: Vec<(usize, &str)> =
+                current.grapheme_indices(true).take(max_key_len).collect();
 
-    // Make first assumption for case
-    if first.is_lowercase() {
-        // Check for lowercase consistency
-        if chars.any(|c| c.is_uppercase()) {
-            Case::Mixed
-        } else {
-            Case::Lower
-        }
-    } else {
-        // Check for uppercase consistency
-        let mut has_lowercase = false;
-        let mut has_uppercase = false;
+            // Iterate over graphemes backwards
+            for i in (0..graphemes.len()).rev() {
+                // Slice from current position to i-th grapheme end
+                let (grapheme_start, grapheme) = graphemes[i];
+                let grapheme_end = grapheme_start + grapheme.len();
+                let segment = &current[..grapheme_end];
 
-        // Identify internal cases
-        for c in chars {
-            if c.is_uppercase() {
-                has_uppercase = true;
-            } else if c.is_lowercase() {
-                has_lowercase = true
+                // On match, transcribe and advance
+                if let Some(transcription) =
+                    self.get_transcription(segment, prefix_start, postfix_end)
+                {
+                    output.push_str(transcription);
+                    current = &current[grapheme_end..];
+                    matched = true;
+                    prefix_start = false;
+                    postfix_end = false;
+                    break;
+                }
             }
 
-            if has_uppercase && has_lowercase {
-                break;
+            // On no match, copy as-is
+            if !matched {
+                if let Some(first_grapheme) = current.graphemes(true).next() {
+                    output.push_str(first_grapheme);
+                    current = &current[first_grapheme.len()..];
+                }
             }
         }
 
-        // Identify general case based on the internal ones
-        if has_lowercase && has_uppercase {
-            Case::Mixed
-        } else if has_uppercase {
-            Case::Upper
-        } else if has_lowercase {
-            Case::Title
-        } else {
-            Case::Title
-        }
-    }
-}
-
-/// Transcribes segment case sensitive
-fn transcribe_segment(
-    segment: &str,
-    max_len: usize,
-    get_transcription: &dyn Fn(&str, bool) -> Option<&'static str>,
-    mark_word_start: bool,
-    result: &mut String,
-) {
-    // -- SEGMENT HANDLING --
-    // Discard empty segment
-    if segment.is_empty() {
-        return;
+        output
     }
 
-    // Transcribe non-alphabetic segment
-    if !segment.chars().next().unwrap().is_alphabetic() {
-        result.push_str(segment);
-        return;
+    /// Transcribes segment case sensitive
+    fn transcribe_segment(&self, segment: &str, result: &mut String) {
+        // -- SEGMENT HANDLING --
+        // Discard empty segment
+        if segment.is_empty() {
+            return;
+        }
+
+        // Transcribe non-alphabetic segment
+        if !segment.chars().next().unwrap().is_alphabetic() {
+            result.push_str(segment);
+            return;
+        }
+
+        // -- WORD HANDLING --
+        let word = segment;
+
+        // 1. Record original case
+        let case = casing::record_case(&word);
+
+        // 2. Transcribe lowercased segment
+        let lowercase_word = word.to_lowercase();
+        let transcribed_word = self.transcribe_word(&lowercase_word);
+
+        // 3. Reapply original case
+        let cased_transcribed_word =
+            casing::reapply_case(&transcribed_word, case);
+        result.push_str(&cased_transcribed_word);
     }
 
-    // -- WORD HANDLING --
-    let word = segment;
+    /// Transcribe input: transcribe_segment -> transcribe_word
+    fn transcribe(&self, input: &str) -> String {
+        let mut result = String::with_capacity(input.len() * 2);
+        let mut last_boundary = 0;
 
-    // 0. Define Titleize as default style applied
-    let titleize = |s: &str| -> String {
-        let mut graphemes = s.graphemes(true);
-        if let Some(first) = graphemes.next() {
-            first.to_uppercase() + graphemes.as_str()
-        } else {
-            String::new()
-        }
-    };
+        // Define if first segment alphabetic
+        let mut last_was_alphabetic = input
+            .graphemes(true)
+            .next()
+            .map_or(false, |g| g.chars().next().unwrap().is_alphabetic());
 
-    // 1. Record original case
-    let case = get_case(word);
+        // Transcribe segments based on boundaries
+        for (i, grapheme) in input.grapheme_indices(true) {
+            let current_is_alphabetic =
+                grapheme.chars().next().unwrap().is_alphabetic();
 
-    // 2. Transcribe lowercased segment
-    let lowercase_word = word.to_lowercase();
-    let transcribed_word = transcribe_word(
-        &lowercase_word,
-        max_len,
-        get_transcription,
-        mark_word_start,
-    );
+            if current_is_alphabetic != last_was_alphabetic {
+                let segment = &input[last_boundary..i];
+                self.transcribe_segment(segment, &mut result);
+                last_boundary = i;
+                last_was_alphabetic = current_is_alphabetic;
+            }
+        }
 
-    // 3. Apply original case
-    match case {
-        Case::Lower => {
-            result.push_str(&transcribed_word);
-        }
-        Case::Title => {
-            result.push_str(&titleize(&transcribed_word));
-        }
-        Case::Upper => {
-            result.push_str(&transcribed_word.to_uppercase());
-        }
-        // Fall back to TitleCase
-        Case::Mixed => {
-            result.push_str(&titleize(&transcribed_word));
-        }
+        // Transcribe segment after the boundary
+        self.transcribe_segment(&input[last_boundary..], &mut result);
+
+        result
     }
-}
-
-/// Transcribe input: transcribe_segment -> transcribe_word
-pub fn transcribe(
-    input: &str,
-    max_len: usize,
-    get_transcription: impl Fn(&str, bool) -> Option<&'static str>,
-    mark_word_start: bool,
-) -> String {
-    let mut result = String::with_capacity(input.len() * 2);
-    let mut last_boundary = 0;
-
-    // Define if first segment alphabetic
-    let mut last_was_alphabetic = input
-        .graphemes(true)
-        .next()
-        .map_or(false, |g| g.chars().next().unwrap().is_alphabetic());
-
-    // Transcribe segments based on boundaries
-    for (i, grapheme) in input.grapheme_indices(true) {
-        let current_is_alphabetic =
-            grapheme.chars().next().unwrap().is_alphabetic();
-
-        if current_is_alphabetic != last_was_alphabetic {
-            let segment = &input[last_boundary..i];
-            transcribe_segment(
-                segment,
-                max_len,
-                &get_transcription,
-                mark_word_start,
-                &mut result,
-            );
-            last_boundary = i;
-            last_was_alphabetic = current_is_alphabetic;
-        }
-    }
-
-    // Transcribe segment after the boundary
-    transcribe_segment(
-        &input[last_boundary..],
-        max_len,
-        &get_transcription,
-        mark_word_start,
-        &mut result,
-    );
-
-    result
 }

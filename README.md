@@ -31,10 +31,10 @@ The current development priority is as follows:
 | :--- | :--- |
 | **Chinese** | ⏳ Planned |
 | **Indonesian** | ⏳ Planned |
-| **Vietnamese** | ⏳ Planned |
+| **Vietnamese** | ⏳ Beta |
 | **Korean** | ⏳ Planned |
 | **Thai** | ✅ **Done** |
-| **Burmese** | ✅ **Done** |
+| **Burmese** | ⏳ Re-Beta|
 
 ## Installation
 

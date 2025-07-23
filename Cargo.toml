@@ -1,9 +1,12 @@
 [package]
 name = "cyrillify"
-version = "0.2.0"
+version = "0.3.0"
 edition = "2024"
 
 [dependencies]
+enum_dispatch = "0.3.13"
 hashify = "0.2.6"
 iced = "0.13.1"
+strum = "0.27.2"
+strum_macros = "0.27.2"
 unicode-segmentation = "1.12.0"
