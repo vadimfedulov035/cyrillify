@@ -5,14 +5,14 @@ use iced::{Alignment, Element, Length, Task as Command};
 use strum::IntoEnumIterator;
 
 mod casing;
-mod languages;
+mod langs;
 mod transcriber;
 
 use transcriber::TranscriberEnum;
 use transcriber::TranscriberTrait;
 
 pub fn main() -> iced::Result {
-    iced::application("Cyrillify", Cyrillify::update, Cyrillify::view)
+    iced::application("Cyrillify v0.3.1", Cyrillify::update, Cyrillify::view)
         .window_size((400.0, 420.0))
         .run()
 }

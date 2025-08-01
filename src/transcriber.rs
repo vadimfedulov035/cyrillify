@@ -3,7 +3,7 @@ use strum_macros::EnumIter;
 use unicode_segmentation::UnicodeSegmentation;
 
 use crate::casing;
-use crate::languages::{burmese, thai, vietnamese};
+use crate::langs::{burmese, thai, vietnamese};
 
 // Enum language
 #[derive(EnumIter)]
@@ -34,7 +34,7 @@ pub trait TranscriberTrait {
     /// Returns format rules applied to key
     fn get_format_rules(&self) -> FormatRules;
 
-    /// Returns transcription for given lowercase key
+    /// Returns transcription for given uppercase key
     fn get_transcription_str(&self, key: &str) -> Option<&'static str>;
 
     // -- DEFAULT IMPLEMENTATION --
@@ -140,14 +140,13 @@ pub trait TranscriberTrait {
         // 1. Record original case
         let case = casing::record_case(&word);
 
-        // 2. Transcribe lowercased segment
-        let lowercase_word = word.to_lowercase();
-        let transcribed_word = self.transcribe_word(&lowercase_word);
+        // 2. Transcribe uppercased segment
+        let word_upper = word.to_uppercase();
+        let word_transcribed = self.transcribe_word(&word_upper);
 
         // 3. Reapply original case
-        let cased_transcribed_word =
-            casing::reapply_case(&transcribed_word, case);
-        result.push_str(&cased_transcribed_word);
+        let word_cased = casing::reapply_case(&word_transcribed, case);
+        result.push_str(&word_cased);
     }
 
     /// Transcribe input: transcribe_segment -> transcribe_word

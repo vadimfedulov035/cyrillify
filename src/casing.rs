@@ -9,8 +9,9 @@ pub enum Case {
 }
 
 /// Converts string to Title
-fn titleize(s: &str) -> String {
-    let mut graphemes = s.graphemes(true);
+fn titleize(word: &str) -> String {
+    let lower = word.to_lowercase();
+    let mut graphemes = lower.graphemes(true);
     let first = graphemes.next().unwrap();
     first.to_uppercase() + graphemes.as_str()
 }
