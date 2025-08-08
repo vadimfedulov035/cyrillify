@@ -1,4 +1,7 @@
-#![windows_subsystem = "windows"]
+#![cfg_attr(
+    all(not(debug_assertions), target_os = "windows"),
+    windows_subsystem = "windows"
+)]
 
 use iced::widget::{column, container, pick_list, text, text_input};
 use iced::{Alignment, Element, Length, Task as Command};
@@ -8,11 +11,14 @@ mod casing;
 mod langs;
 mod transcriber;
 
+#[cfg(test)]
+mod tests;
+
 use transcriber::TranscriberEnum;
 use transcriber::TranscriberTrait;
 
 pub fn main() -> iced::Result {
-    iced::application("Cyrillify v0.3.1", Cyrillify::update, Cyrillify::view)
+    iced::application("Cyrillify v0.4.0", Cyrillify::update, Cyrillify::view)
         .window_size((400.0, 420.0))
         .run()
 }

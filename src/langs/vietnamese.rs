@@ -1,41 +1,9 @@
-use crate::transcriber::FormatRules;
-use crate::transcriber::TranscriberTrait;
+#[cfg(test)]
+use crate::tests::Mapping;
 
-pub struct Transcriber {
-    max_key_len: usize,
-    format_rules: FormatRules,
-}
-
-// Vietnamese constructor
-impl std::default::Default for Transcriber {
-    fn default() -> Self {
-        Self {
-            max_key_len: 4,
-            format_rules: FormatRules {
-                prefix_start: true,
-                postfix_end: true,
-            },
-        }
-    }
-}
-
-// Vietnamese transcriber
-impl TranscriberTrait for Transcriber {
-    fn get_lang_name(&self) -> &'static str {
-        "Вьетнамский".into()
-    }
-
-    fn get_max_key_len(&self) -> usize {
-        self.max_key_len
-    }
-
-    fn get_format_rules(&self) -> FormatRules {
-        self.format_rules
-    }
-
-    fn get_transcription_str(&self, key: &str) -> Option<&'static str> {
-        hashify::tiny_map! {
-            key.as_bytes(),
+crate::create_transcriber!(
+    lang_name: "Вьетнамский",
+    lang_rules: {
             // LATIN LETTERS + đ/ư
             "A" => "А", "B" => "Б", "C" => "К", "D" => "З",
             "E" => "Е", "F" => "Ф", "G" => "Г", "H" => "Х",
@@ -157,6 +125,12 @@ impl TranscriberTrait for Transcriber {
             "GIUYÊ" => "ЗЮЕ",
             "LUYÊ" => "ЛЮЕ",
             "XUYÊ" => "СЮЕ",
-        }
+
+    },
+    mappings: {
+        vec![Mapping {
+            from: "A",
+            to: "А",
+        }]
     }
-}
+);

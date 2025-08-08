@@ -9,38 +9,34 @@ use crate::langs::{burmese, thai, vietnamese};
 #[derive(EnumIter)]
 #[enum_dispatch(TranscriberTrait)]
 pub enum TranscriberEnum {
-    Burmese(burmese::Transcriber),
     Thai(thai::Transcriber),
+    Burmese(burmese::Transcriber),
     Vietnamese(vietnamese::Transcriber),
 }
 
 // Rules definition
 #[derive(Copy, Clone)]
-pub struct FormatRules {
+pub struct SearchRules {
+    pub max_key_len: usize,
     pub prefix_start: bool,
     pub postfix_end: bool,
 }
 
-// Generic language transcriber
+// Generic language transcriber engine
 #[enum_dispatch]
 pub trait TranscriberTrait {
-    // -- METHODS TO IMPLEMENT --
-    /// Returns language name
     fn get_lang_name(&self) -> &'static str;
 
-    /// Returns the maximum key length to handle
-    fn get_max_key_len(&self) -> usize;
+    fn get_search_rules(&self) -> SearchRules;
 
-    /// Returns format rules applied to key
-    fn get_format_rules(&self) -> FormatRules;
+    fn get_transcription(&self, key: &str) -> Option<&'static str>;
 
-    /// Returns transcription for given uppercase key
-    fn get_transcription_str(&self, key: &str) -> Option<&'static str>;
+    #[cfg(test)]
+    fn get_mappings(&self) -> Vec<crate::tests::Mapping>;
 
     // -- DEFAULT IMPLEMENTATION --
 
-    /// Transcribes key using its config
-    fn get_transcription(
+    fn transcribe_word_segment(
         &self,
         key: &str,
         prefix_start: bool,
@@ -55,31 +51,29 @@ pub trait TranscriberTrait {
             } else if postfix_end {
                 format!("{}|", key)
             } else {
-                panic!();
+                unreachable!();
             };
 
             // Check formatted key
-            if let Some(transcription) =
-                self.get_transcription_str(&formatted_key)
+            if let Some(transcription) = self.get_transcription(&formatted_key)
             {
                 return Some(transcription);
             }
         }
 
-        // Check original key (right away or as a fallback)
-        self.get_transcription_str(key)
+        // Check original key (maybe as fallback)
+        self.get_transcription(key)
     }
 
-    /// Transcribes word to cyrillic alphabet, falls back to rewriting it
     fn transcribe_word(&self, input: &str) -> String {
         let mut current = input;
         let mut output = String::with_capacity(input.len() * 2);
 
-        let max_key_len = self.get_max_key_len();
-        let FormatRules {
-            mut prefix_start,
-            mut postfix_end,
-        } = self.get_format_rules();
+        let SearchRules {
+            max_key_len,      // Value defining the max grapheme slice length
+            mut prefix_start, // Rule applied only once (at the start)
+            postfix_end,      // Rule applied with extra condition (at the end)
+        } = self.get_search_rules();
 
         while !current.is_empty() {
             let mut matched = false;
@@ -90,20 +84,24 @@ pub trait TranscriberTrait {
 
             // Iterate over graphemes backwards
             for i in (0..graphemes.len()).rev() {
-                // Slice from current position to i-th grapheme end
+                // Slice from current to farther grapheme end (longest matching)
                 let (grapheme_start, grapheme) = graphemes[i];
                 let grapheme_end = grapheme_start + grapheme.len();
                 let segment = &current[..grapheme_end];
 
-                // On match, transcribe and advance
-                if let Some(transcription) =
-                    self.get_transcription(segment, prefix_start, postfix_end)
-                {
+                // Process the segment if transcription found
+                if let Some(transcription) = self.transcribe_word_segment(
+                    segment,
+                    prefix_start,
+                    // Optimization: Conditional postfix pattern formatting only at the end
+                    postfix_end && grapheme_end == current.len(),
+                ) {
+                    // Record && Advance && Flag
                     output.push_str(transcription);
                     current = &current[grapheme_end..];
                     matched = true;
+                    // Optimization: After matching on start, no more prefix pattern formatting
                     prefix_start = false;
-                    postfix_end = false;
                     break;
                 }
             }
@@ -178,4 +176,86 @@ pub trait TranscriberTrait {
 
         result
     }
+}
+
+// Compile time search rules derivation
+pub const fn derive_search_rules(
+    rules: &'static [(&str, &str)],
+) -> SearchRules {
+    let mut max_key_len = 0;
+    let mut prefix_start = false;
+    let mut postfix_end = false;
+
+    let mut i = 0;
+    while i < rules.len() {
+        let key = rules[i].0;
+        let mut len = key.len();
+
+        if key.as_bytes()[0] == b'|' {
+            prefix_start = true;
+            len -= 1;
+        }
+        if len > 0 && key.as_bytes()[key.len() - 1] == b'|' {
+            postfix_end = true;
+            len -= 1;
+        }
+
+        if len > max_key_len {
+            max_key_len = len;
+        }
+        i += 1;
+    }
+
+    SearchRules {
+        max_key_len,
+        prefix_start,
+        postfix_end,
+    }
+}
+
+#[macro_export]
+macro_rules! create_transcriber {
+    (
+        // Language name
+        lang_name: $lang_name:literal,
+        // Language rules
+        lang_rules: { $($key:literal => $value:literal),* $(,)? },
+        // Mappings (from -> to)
+        mappings: { $($mapping_body:tt)* }
+    ) => {
+        // Create character mappings from rule tokens
+        const LANG_RULES: &'static [(&'static str, &'static str)] = &[
+            $( ($key, $value) ),*
+        ];
+
+        // Define transcriber struct
+        #[derive(Default)]
+        pub struct Transcriber;
+
+        // Implement transcriber trait
+        impl crate::transcriber::TranscriberTrait for Transcriber {
+            fn get_lang_name(&self) -> &'static str {
+                $lang_name
+            }
+
+            fn get_search_rules(&self) -> crate::transcriber::SearchRules {
+                // Derive search rules at COMPILE TIME
+                const SEARCH_RULES: crate::transcriber::SearchRules =
+                    crate::transcriber::derive_search_rules(&LANG_RULES);
+                SEARCH_RULES
+            }
+
+            #[cfg(test)]
+            fn get_mappings(&self) -> Vec<crate::tests::Mapping> {
+                $($mapping_body)*
+            }
+
+            fn get_transcription(&self, key: &str) -> Option<&'static str> {
+                hashify::tiny_map! {
+                    key.as_bytes(),
+                    $($key => $value),*
+                }
+            }
+        }
+    };
 }
