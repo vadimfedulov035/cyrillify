@@ -3,15 +3,15 @@ use strum_macros::EnumIter;
 use unicode_segmentation::UnicodeSegmentation;
 
 use crate::casing;
-use crate::langs::{burmese, thai, vietnamese};
+use crate::langs::{bur, tha, vie};
 
 // Enum language
 #[derive(EnumIter)]
 #[enum_dispatch(TranscriberTrait)]
 pub enum TranscriberEnum {
-    Thai(thai::Transcriber),
-    Burmese(burmese::Transcriber),
-    Vietnamese(vietnamese::Transcriber),
+    Thai(tha::Transcriber),
+    Burmese(bur::Transcriber),
+    Vietnamese(vie::Transcriber),
 }
 
 // Rules definition

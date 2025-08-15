@@ -44,7 +44,7 @@ crate::create_transcriber!(
         "INE|" => "АЙН", // Hain -> Хайн, -INE is less common that -AING
 
         // ===================================================================
-        //  CONSONANT & ASPIRANTS
+        //  CONSONANTS & ASPIRANTS
         // ===================================================================
         // SH sound
         "SH" => "Ш",    // Daw Kin Win Shwe -> До Кин Вин Шве
@@ -57,7 +57,8 @@ crate::create_transcriber!(
         "AR" => "А",    // Myanmar -> Мьянма (country)
         "AUK" => "АУ",  // Sai Mauk Kham -> Сайн Мау Кхан (vice president)
                         // Kyaukse -> Чжаусе (town)
-        "AT" => "А",    // Kyat -> Чжа (currency)
+        "AT" => "А",    // Kyat -> Чжа (currency) [but "Кьят" is standard
+                        // only to name the currency correctly]
         "IT" => "И",    // Myitkyina -> Мьичина (capital town)
                         // Sittaung -> Ситаун (river)
         "|TH" => "Т",   // Than Shwe -> Тан Шве (prime minister)
@@ -72,44 +73,43 @@ crate::create_transcriber!(
         "MY" => "МЬ",   // Myanmar -> Мьянма (country)
         "NY" => "НЬ",   // Paganyaw -> Паганья (ethnic group)
         "PY" => "ПЬ",   // Pyi -> Пьи (city)
-        // Palatalized explosive consonants (position dependent)
+        // Palatalized explosive consonant (position dependent)
         "|KY" => "ЧЖ",  // Htin Kyaw -> Тхин Чжо (president)
                         // Aung San Suu Kyi -> Аун Сан Су Чжи
                         // Kyaukse -> Чжаусе (town)
 
         // ===================================================================
-        //  Palatalized consonants * (YA|YU/YO/YW|INE)
+        //  PALATALIZED CONSONANTS * DIPHTONGS
         // ===================================================================
         // "KYA" would be "ЧЖА", generalizable with KY+A -> ЧЖ+А
         "MYA" => "МЬЯ", // Myanmar -> Мьянма (country)
         "NYA" => "НЬЯ", // Nyaung-U -> Ньяун-У (town)
         "PYA" => "ПЬЯ", // Bala Pyan -> Бала Пьян (dancer)
 
-        // YU/YO/YW patterns
-        "KYU" => "ЧЬЮ", "KYO" => "ЧЬЮ", "KYW" => "ЧЬЮ",
-        "MYU" => "МЬЮ", "MYO" => "МЬЮ", "MYW" => "MЬЮ",
-        "NYU" => "НЬЮ", "NYO" => "НЬЮ", "NYW" => "НЬЮ",
-        "PYU" => "ПЬЮ", "PYO" => "ПЬЮ", "PYW" => "ПЬЮ",
+        // YO/YU/YW patterns
+        "KYO" => "ЧЬО", "KYU" => "ЧЬЮ", "KYW" => "ЧЬЮ",
+        "MYO" => "МЬО", "MYU" => "МЬЮ", "MYW" => "МЬЮ",
+        "NYO" => "НЬО", "NYU" => "НЬЮ", "NYW" => "НЬЮ",
+        "PYO" => "ПЬО", "PYU" => "ПЬЮ", "PYW" => "ПЬЮ",
         // + ON pattern
-        "ONYU" => "ОУНЬЮ", "ONYO" => "ОУНЬЮ", "ONYW" => "ОУНЬЮ",
+        "ONYO" => "ОУНЬО", "ONYU" => "ОУНЬЮ", "ONYW" => "ОУНЬЮ",
 
         // YINE patterns
-        "KYINE|" => "ЧЬЯЙН",
-        "MYINE|" => "МЬЯЙН",
-        "NYINE|" => "НЬЯЙН",
-        "PYINE|" => "ПЬЯЙН",
+        "KYINE|" => "ЧЬЯЙН", "PYINE|" => "ПЬЯЙН",
+        "MYINE|" => "МЬЯЙН", "NYINE|" => "НЬЯЙН",
 
         // ===================================================================
-        //  Dictionary
+        //  DICTIONARY
         // ===================================================================
 
         "|SAI|" => "САЙН",   // Sai Mauk Kham -> Сайн Мау Кхан
-        "|HTET|" => "ТХE",   // Htet Htet Moe Oo -> Тхе Тхе Мьо У (actress)
-
     },
     mappings: {
         vec![
-            // Presidents of Mianmar
+            // HEADS OF MYANMAR STATE
+            // King
+            Mapping { from: "Hkun Law", to: "Кхун Ло" },
+            // Presidents (before 1988)
             Mapping { from: "Sao Shwe Thaik", to: "Сао Шве Тай" },
             Mapping { from: "Ba U", to: "Ба У" },
             Mapping { from: "Win Maung", to: "Вин Маун" },
@@ -117,13 +117,23 @@ crate::create_transcriber!(
             Mapping { from: "San Yu", to: "Сан Ю" },
             Mapping { from: "Sein Lwin", to: "Сейн Лвин" },
             Mapping { from: "Maung Maung", to: "Маун Маун" },
+            // SPDC chairmen (de facto heads of state, 1988-2011)
+            Mapping { from: "Saw Maung", to: "Со Маун" },
+            Mapping { from: "Than Shwe", to: "Тан Шве" },
+            // Presidents (2011-2021)
             Mapping { from: "Thein Sein", to: "Тейн Сейн" },
             Mapping { from: "Htin Kyaw", to: "Тхин Чжо" },
+            Mapping { from: "Win Myint", to: "Вин Мьин" },
+            // SAC Chairman (de facto head of state since 2021)
+            Mapping { from: "Min Aung Hlaing", to: "Мин Аун Хлайн" },
+            // Acting President (since 2021)
+            Mapping { from: "Myint Swe", to: "Мьин Шве" },
 
-            // Prime ministers of Myanmar
+            // HEADS OF GOVERNMENT OF MYANMAR
+            // Prime Ministers
             Mapping { from: "U Nu", to: "У Ну" },
             // Mapping { from: "Ba Swe", to: "Ба Све" }, // Exc.
-            Mapping { from: "Ne Win", to: "Не Вин" },
+            Mapping { from: "Ne Win", to: "Не Вин" }, // Multiple times
             Mapping { from: "Sein Win", to: "Сейн Вин" },
             Mapping { from: "Maung Maung Kha", to: "Маун Маун Кха" },
             Mapping { from: "Tun Tin", to: "Тун Тин" },
@@ -133,9 +143,9 @@ crate::create_transcriber!(
             Mapping { from: "Soe Win", to: "Со Вин" },
             Mapping { from: "Thein Sein", to: "Тейн Сейн" },
             Mapping { from: "Min Aung Hlaing", to: "Мин Аун Хлайн" },
-            Mapping { from: "Nyo Saw", to: "Нью Со" },
 
-            // Deputy prime ministers
+            // SECOND-IN-COMMAND OF MYANMAR
+            // Deputy Prime Ministers (pre-1988)
             Mapping { from: "Bo Let Ya", to: "Бо Лет Я" },
             Mapping { from: "Kyaw Nyein", to: "Чжо Ньейн" },
             Mapping { from: "Ne Win", to: "Не Вин" },
@@ -143,34 +153,30 @@ crate::create_transcriber!(
             Mapping { from: "Thein Maung", to: "Тейн Маун" },
             Mapping { from: "Lun Baw", to: "Лун Бо" },
             Mapping { from: "U Lwin", to: "У Лвин" },
-            Mapping { from: "Tun Tin", to: "Тун Тин" },
             Mapping { from: "Thura Kyaw Htin", to: "Тура Чжо Тхин" },
-            Mapping { from: "Than Shwe", to: "Тан Шве" },
+            Mapping { from: "Tun Tin", to: "Тун Тин" },
             Mapping { from: "Khin Maung Yin", to: "Кхин Маун Йин" },
             Mapping { from: "Maung Maung Khin", to: "Маун Маун Кхин" },
-            Mapping { from: "Tun Tin", to: "Тун Тин" },
+            // SPDC Vice Chairmen (1988-2011)
+            Mapping { from: "Than Shwe", to: "Тан Шве" },
+            Mapping { from: "Maung Aye", to: "Маун Э" },
             Mapping { from: "Tin Hla", to: "Тин Хла" },
-            Mapping { from: "Soe Win", to: "Со Вин" },
-            Mapping { from: "Mya Tun Oo", to: "Мья Тун У" },
-            Mapping { from: "Tin Aung San", to: "Тин Аун Сан" },
-            // Mapping { from: "Soe Htut", to: "Со Хтут" }, // Exc.
-            Mapping { from: "Win Shein", to: "Вин Шейн" },
-            Mapping { from: "Than Swe", to: "Тан Шве" },
-            Mapping { from: "Maung Maung Aye", to: "Маун Маун Э" },
-
-            // Vice presidents
+            // Vice Presidents (2011-2021, served concurrently)
             Mapping { from: "Tin Aung Myint Oo", to: "Тин Аун Мьин У" },
             Mapping { from: "Sai Mauk Kham", to: "Сайн Мау Кхам" },
             Mapping { from: "Nyan Tun", to: "Ньян Тун" },
             Mapping { from: "Myint Swe", to: "Мьин Шве" },
             // Mapping { from: "Henry Van Thio", to: "Генри Ван Тио" }, // Exc.
+            // Deputy Prime Ministers (since 2021, under SAC, concurrent)
+            Mapping { from: "Soe Win", to: "Со Вин" }, // Another one
+            Mapping { from: "Mya Tun Oo", to: "Мья Тун У" },
+            Mapping { from: "Tin Aung San", to: "Тин Аун Сан" },
+            // Mapping { from: "Soe Htut", to: "Со Хтут" }, // Exc.
+            Mapping { from: "Win Shein", to: "Вин Шейн" },
+            Mapping { from: "Than Swe", to: "Тан Шве" }, // Another one
+            Mapping { from: "Nyo Saw", to: "Ньо Со"},
+            Mapping { from: "Maung Maung Aye", to: "Маун Маун Э" },
 
-            // SPDC chairmen
-            Mapping { from: "Saw Maung", to: "Со Маун" },
-            Mapping { from: "Maung Aye", to: "Маун Э" },
-
-            // Kings
-            Mapping { from: "Hkun Law", to: "Кхун Ло" },
 
             // Toponyms
             Mapping { from: "Myanmar", to: "Мьянма" },

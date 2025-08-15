@@ -18,7 +18,7 @@ use transcriber::TranscriberEnum;
 use transcriber::TranscriberTrait;
 
 pub fn main() -> iced::Result {
-    iced::application("Cyrillify v0.4.0", Cyrillify::update, Cyrillify::view)
+    iced::application("Cyrillify v0.4.1", Cyrillify::update, Cyrillify::view)
         .window_size((400.0, 420.0))
         .run()
 }

@@ -1,3 +1,3 @@
-pub mod burmese;
-pub mod thai;
-pub mod vietnamese;
+pub mod bur;
+pub mod tha;
+pub mod vie;
